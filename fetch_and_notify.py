@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from pydexcom import Dexcom
 from pydexcom.const import Region
 
-DEXCOM_USERNAME = os.environ["DEXCOM_SHARE_USERNAME"]
+DEXCOM_USERNAME = os.environ.get("DEXCOM_SHARE_USERNAME")
+DEXCOM_ACCOUNT_ID = os.environ.get("DEXCOM_ACCOUNT_ID")
 DEXCOM_PASSWORD = os.environ["DEXCOM_SHARE_PASSWORD"]
 DEXCOM_REGION = Region(os.environ.get("DEXCOM_REGION", "us").lower())
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
@@ -28,7 +29,12 @@ SUPABASE_HEADERS = {
 # ---------- Dexcom Share ----------
 
 def fetch_latest_reading() -> tuple[int, str]:
-    dexcom = Dexcom(username=DEXCOM_USERNAME, password=DEXCOM_PASSWORD, region=DEXCOM_REGION)
+    if DEXCOM_ACCOUNT_ID:
+        dexcom = Dexcom(account_id=DEXCOM_ACCOUNT_ID, password=DEXCOM_PASSWORD, region=DEXCOM_REGION)
+    elif DEXCOM_USERNAME:
+        dexcom = Dexcom(username=DEXCOM_USERNAME, password=DEXCOM_PASSWORD, region=DEXCOM_REGION)
+    else:
+        raise RuntimeError("Set DEXCOM_ACCOUNT_ID or DEXCOM_SHARE_USERNAME")
     reading = dexcom.get_current_glucose_reading()
     if reading is None:
         raise RuntimeError("Dexcom Share returned no current glucose reading")

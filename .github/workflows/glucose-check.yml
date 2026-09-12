@@ -21,6 +21,7 @@ jobs:
       - name: Fetch reading and notify
         env:
           DEXCOM_SHARE_USERNAME: ${{ secrets.DEXCOM_SHARE_USERNAME }}
+          DEXCOM_ACCOUNT_ID: ${{ secrets.DEXCOM_ACCOUNT_ID }}
           DEXCOM_SHARE_PASSWORD: ${{ secrets.DEXCOM_SHARE_PASSWORD }}
           DEXCOM_REGION: ${{ secrets.DEXCOM_REGION || 'us' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

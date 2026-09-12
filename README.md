@@ -8,6 +8,7 @@
 4. Enable Dexcom Share and add these GitHub Actions secrets:
 
 	- `DEXCOM_SHARE_USERNAME`
+	- `DEXCOM_ACCOUNT_ID` (optional; use this instead of the username if Share authentication fails)
 	- `DEXCOM_SHARE_PASSWORD`
 	- `DEXCOM_REGION` (`us`, `ous` for outside the US, or `jp` for Japan)
 	- `SUPABASE_URL`
