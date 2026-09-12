@@ -9,6 +9,7 @@
 
 	- `DEXCOM_SHARE_USERNAME`
 	- `DEXCOM_SHARE_PASSWORD`
+	- `DEXCOM_REGION` (`us`, `ous` for outside the US, or `jp` for Japan)
 	- `SUPABASE_URL`
 	- `SUPABASE_SERVICE_KEY`
 	- `ONESIGNAL_APP_ID`

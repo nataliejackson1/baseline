@@ -22,6 +22,7 @@ jobs:
         env:
           DEXCOM_SHARE_USERNAME: ${{ secrets.DEXCOM_SHARE_USERNAME }}
           DEXCOM_SHARE_PASSWORD: ${{ secrets.DEXCOM_SHARE_PASSWORD }}
+          DEXCOM_REGION: ${{ secrets.DEXCOM_REGION || 'us' }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}

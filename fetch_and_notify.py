@@ -5,9 +5,11 @@ import requests
 from datetime import datetime, timezone
 
 from pydexcom import Dexcom
+from pydexcom.const import Region
 
 DEXCOM_USERNAME = os.environ["DEXCOM_SHARE_USERNAME"]
 DEXCOM_PASSWORD = os.environ["DEXCOM_SHARE_PASSWORD"]
+DEXCOM_REGION = Region(os.environ.get("DEXCOM_REGION", "us").lower())
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
 
@@ -26,7 +28,7 @@ SUPABASE_HEADERS = {
 # ---------- Dexcom Share ----------
 
 def fetch_latest_reading() -> tuple[int, str]:
-    dexcom = Dexcom(username=DEXCOM_USERNAME, password=DEXCOM_PASSWORD)
+    dexcom = Dexcom(username=DEXCOM_USERNAME, password=DEXCOM_PASSWORD, region=DEXCOM_REGION)
     reading = dexcom.get_current_glucose_reading()
     if reading is None:
         raise RuntimeError("Dexcom Share returned no current glucose reading")
@@ -170,18 +172,19 @@ def main() -> None:
 
     event_key = None
     fast_trend = trend_arrow in ("↑↑", "↓↓")
-    if state in ("low", "very-high") or (fast_trend and state in ("low-ish", "high")):
+    alert_event = state in ("low", "very-high") or (fast_trend and state in ("low-ish", "high"))
+    if alert_event:
         event_key = f"{state}-{trend_arrow}"
     elif meal:
         event_key = f"meal-{meal}-{now.date()}"  # one nudge per meal window per day
 
     if event_key and event_key != last_key:
-        if state in ("low", "very-high"):
+        if alert_event:
             msg = generate_message("alert", glucose, trend_arrow)
             send_push("Sugar Buddy", msg)
-        else:
+        elif meal:
             msg = generate_message("meal", glucose, trend_arrow, meal)
-            send_push(f"Sugar Buddy — {meal.title()} time", msg)
+            send_push(f"baseline — {meal.title()} time", msg)
         set_last_notify_key(event_key)
 
 
