@@ -1,0 +1,31 @@
+name: Glucose check
+
+on:
+  schedule:
+    # GitHub may delay scheduled runs by several minutes under load.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}  # lets you trigger it manually from the Actions tab
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pydexcom requests
+
+      - name: Fetch reading and notify
+        env:
+          DEXCOM_SHARE_USERNAME: ${{ secrets.DEXCOM_SHARE_USERNAME }}
+          DEXCOM_SHARE_PASSWORD: ${{ secrets.DEXCOM_SHARE_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ secrets.GROQ_MODEL || 'openai/gpt-oss-20b' }}
+        run: python fetch_and_notify.py

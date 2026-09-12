@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sugar Buddy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<style>
+  :root {
+    --bg: #f5f6f2;
+    --surface: #fffefa;
+    --surface-strong: #ffffff;
+    --ink: #16211c;
+    --muted: #718078;
+    --line: #dfe6df;
+    --green: #2e7657;
+    --green-soft: #e2f0e7;
+    --yellow: #d69421;
+    --yellow-soft: #fff0c9;
+    --red: #bd5146;
+    --red-soft: #f8e1dc;
+    --shadow: 0 18px 50px rgba(30, 53, 42, .09);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font-family: 'Manrope', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: radial-gradient(circle at 50% -20%, #e9f0e9 0, var(--bg) 38rem); }
+  #app { max-width: 1120px; min-height: 100dvh; margin: 0 auto; padding: 28px 28px 34px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 0 0 28px; }
+  .brand-lockup { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--ink); color: #dff2de; font-size: 20px; }
+  .brand-name { font-size: 18px; font-weight: 800; letter-spacing: 0; }
+  .brand-subtitle { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .glucose-chip { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .glucose-chip .arrow { color: var(--ink); font-size: 18px; font-weight: 700; }
+  .live-pill { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.6); color: var(--muted); font-size: 11px; font-weight: 700; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); }
+  .live-pill.connected .live-dot { background: var(--green); }
+  .dashboard { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); gap: 22px; align-items: stretch; }
+  .reading-panel { min-height: 560px; padding: 34px; border: 1px solid #dce6dd; border-radius: 28px; background: var(--surface-strong); box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; }
+  .reading-panel::after { content: ''; position: absolute; width: 270px; height: 270px; right: -90px; top: -95px; border-radius: 50%; background: #eef6ec; z-index: 0; }
+  .reading-top, .reading-main, .reading-footer { position: relative; z-index: 1; }
+  .eyebrow { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  .reading-main { padding: 38px 0 50px; }
+  .reading-value { display: flex; align-items: baseline; gap: 13px; }
+  .reading-value strong { font-family: 'DM Mono', monospace; font-size: clamp(68px, 10vw, 118px); font-weight: 500; letter-spacing: -5px; line-height: .95; }
+  .reading-unit { color: var(--muted); font-size: 13px; }
+  .status-line { display: flex; align-items: center; gap: 10px; margin-top: 22px; font-size: 17px; font-weight: 800; }
+  .status-swatch { width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 6px var(--green-soft); }
+  .reading-note { max-width: 420px; margin: 10px 0 0 22px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .reading-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .metric { padding: 15px 16px; border: 1px solid var(--line); border-radius: 15px; background: rgba(247,250,246,.75); }
+  .metric-label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  .metric-value { font-size: 14px; font-weight: 800; }
+  .coach-panel { min-height: 560px; display: flex; flex-direction: column; padding: 26px; border: 1px solid var(--line); border-radius: 28px; background: #edf1e9; }
+  .coach-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .coach-heading h1 { max-width: 320px; margin: 7px 0 0; font-size: clamp(25px, 3vw, 34px); line-height: 1.06; letter-spacing: -.04em; }
+  .coach-kicker { color: var(--green); font-size: 12px; font-weight: 800; }
+  .chat-scroll { flex: 1; min-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 28px 0 18px; }
+  .msg { max-width: 88%; padding: 12px 14px; border-radius: 14px; font-size: 13px; line-height: 1.55; animation: pop .25s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.agent { align-self: flex-start; border: 1px solid var(--line); background: var(--surface-strong); }
+  .msg.user { align-self: flex-end; background: var(--ink); color: #fff; }
+  .macro-card { align-self: flex-start; max-width: 94%; padding: 17px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface-strong); font-size: 12px; }
+  .macro-card .mtitle { margin-bottom: 11px; font-size: 13px; font-weight: 800; }
+  .macro-row { display: flex; justify-content: space-between; gap: 18px; padding: 7px 0; color: var(--muted); border-top: 1px dashed var(--line); }
+  .macro-row:first-of-type { border-top: none; }
+  .macro-row b { color: var(--ink); font-weight: 800; white-space: nowrap; }
+  .suggest-row { display: flex; gap: 7px; overflow-x: auto; padding: 0 0 14px; }
+  .suggest-chip { flex-shrink: 0; padding: 8px 11px; border: 1px solid #d2ddd2; border-radius: 9px; background: rgba(255,255,255,.65); color: var(--ink); cursor: pointer; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .suggest-chip:hover, .suggest-chip:active { border-color: var(--green); background: var(--green-soft); }
+  .input-bar { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid #d4ded4; }
+  .input-bar input { min-width: 0; flex: 1; padding: 13px 15px; border: 1px solid #d0dbd1; border-radius: 12px; outline: none; background: var(--surface-strong); color: var(--ink); font: 500 13px 'Manrope', sans-serif; }
+  .input-bar input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+  .send-btn { width: 43px; height: 43px; border: 0; border-radius: 12px; background: var(--green); color: #fff; cursor: pointer; font-size: 18px; font-weight: 700; }
+  .send-btn:active { transform: translateY(1px); }
+  .disclaimer { max-width: 720px; margin: 22px auto 0; color: var(--muted); font-size: 10px; line-height: 1.5; text-align: center; }
+  .mascot-zone { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+  #glucoseChip { display: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @media (max-width: 780px) {
+    #app { padding: 18px 16px 24px; }
+    header { padding-bottom: 18px; }
+    .dashboard { display: block; }
+    .reading-panel { min-height: 0; padding: 24px; }
+    .reading-main { padding: 46px 0 42px; }
+    .coach-panel { min-height: 520px; margin-top: 14px; padding: 20px; }
+    .coach-heading h1 { font-size: 28px; }
+  }
+  @media (max-width: 400px) {
+    .brand-subtitle, .live-pill { display: none; }
+    .reading-value strong { font-size: 72px; }
+  }
+
+  /* body bob states */
+  .bob-calm { animation: bobCalm 3.2s ease-in-out infinite; }
+  .bob-alert { animation: bobAlert 1.4s ease-in-out infinite; }
+  .bob-urgent { animation: bobUrgent .5s ease-in-out infinite; }
+  @keyframes bobCalm {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(-1.5deg); }
+  }
+  @keyframes bobAlert {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+  }
+  @keyframes bobUrgent {
+    0%,100% { transform: translate(0,0) rotate(0deg); }
+    25% { transform: translate(-3px,0) rotate(-2deg); }
+    75% { transform: translate(3px,0) rotate(2deg); }
+  }
+
+  /* CHAT */
+  .chat-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    max-width: 82%;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    font-size: 14.5px;
+    line-height: 1.45;
+    animation: pop .25s ease;
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(6px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .msg.agent {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .msg.user {
+    background: var(--brand);
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .macro-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    align-self: flex-start;
+    max-width: 82%;
+    font-size: 14px;
+  }
+  .macro-card .mtitle {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    margin-bottom: 6px;
+  }
+  .macro-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    color: var(--ink-muted);
+    border-top: 1px dashed var(--border);
+  }
+  .macro-row:first-of-type { border-top: none; }
+  .macro-row b { color: var(--ink); font-weight: 600; }
+
+  .suggest-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .suggest-chip {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .suggest-chip:active { background: var(--brand-soft); }
+
+  /* INPUT BAR */
+  .input-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .input-bar input {
+    flex: 1;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 999px;
+    padding: 11px 16px;
+    font-size: 14.5px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    color: var(--ink);
+  }
+  .input-bar input:focus { border-color: var(--brand); }
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .send-btn:active { transform: scale(.94); }
+
+  .disclaimer {
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    text-align: center;
+    padding: 5px 24px 0;
+    line-height: 1.4;
+  }
+
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="brand-lockup">
+      <div class="brand-mark">+</div>
+      <div>
+        <div class="brand-name">Sugar Buddy</div>
+        <div class="brand-subtitle">A calmer read on your glucose</div>
+      </div>
+    </div>
+    <div class="live-pill" id="connectionPill"><span class="live-dot"></span><span id="connectionLabel">Demo reading</span></div>
+    <div class="glucose-chip" id="glucoseChip" aria-hidden="true">
+      <span id="glucoseVal">—</span><span class="arrow" id="glucoseArrow">→</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="reading-panel" aria-labelledby="readingHeading">
+      <div class="reading-top">
+        <div class="eyebrow" id="readingHeading">Current reading</div>
+      </div>
+      <div class="reading-main">
+        <div class="reading-value"><strong id="readingValue">—</strong><span class="reading-unit">mg/dL</span></div>
+        <div class="status-line"><span class="status-swatch" id="statusSwatch"></span><span id="statusLabel">Reading your sensor</span><span id="trendLabel">→</span></div>
+        <p class="reading-note" id="readingNote">Your latest reading will shape the meal guidance on the right.</p>
+      </div>
+      <div class="reading-footer">
+        <div class="metric"><span class="metric-label">Trend</span><span class="metric-value" id="trendValue">Waiting</span></div>
+        <div class="metric"><span class="metric-label">Data source</span><span class="metric-value" id="sourceValue">Demo mode</span></div>
+      </div>
+    </section>
+
+    <section class="coach-panel" aria-labelledby="coachHeading">
+      <div class="coach-heading">
+        <div><div class="coach-kicker">Meal coach</div><h1 id="coachHeading">What sounds good right now?</h1></div>
+        <div class="eyebrow">Private + practical</div>
+      </div>
+
+  <div class="mascot-zone">
+    <div class="mascot-wrap">
+      <div id="mascotBob" class="bob-calm">
+        <svg id="mascot-svg" viewBox="0 0 200 200">
+          <ellipse id="shadow" cx="100" cy="188" rx="34" ry="6" fill="#00000014"/>
+
+          <!-- legs -->
+          <path id="legL" d="M92 148 L80 182" stroke="#2B3A2F" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <path id="legR" d="M108 148 L120 182" stroke="#2B3A2F" stroke-width="7" fill="none" stroke-linecap="round"/>
+          <ellipse cx="78" cy="185" rx="9" ry="4.5" fill="#2B3A2F"/>
+          <ellipse cx="122" cy="185" rx="9" ry="4.5" fill="#2B3A2F"/>
+
+          <!-- torso / shirt -->
+          <rect id="shirt" x="76" y="92" width="48" height="58" rx="14" fill="#5A9367"/>
+
+          <!-- arms (crossed by default) -->
+          <path id="armL" d="M82 98 L122 128" stroke="#5A9367" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <path id="armR" d="M118 98 L78 128" stroke="#5A9367" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+          <!-- neck -->
+          <rect x="93" y="76" width="14" height="18" fill="#D9A876"/>
+
+          <!-- head -->
+          <circle id="head" cx="100" cy="56" r="27" fill="#E3B98F" stroke="#2B3A2F" stroke-width="2.5"/>
+          <!-- messy hair -->
+          <path d="M73 48 Q70 20 100 22 Q132 20 128 50 Q120 34 100 34 Q80 34 73 48 Z" fill="#3B2E27"/>
+          <!-- stubble shadow -->
+          <path d="M80 66 Q100 78 120 66 Q118 74 100 76 Q82 74 80 66 Z" fill="#2B3A2F" opacity="0.12"/>
+
+          <!-- eyebrows -->
+          <path id="browL" d="M80 44 L94 41" stroke="#2B3A2F" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path id="browR" d="M106 40 L120 46" stroke="#2B3A2F" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+          <!-- eyes -->
+          <path id="eyeL" d="M83 52 Q88 55 93 52" stroke="#2B3A2F" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path id="eyeR" d="M107 52 Q112 55 117 52" stroke="#2B3A2F" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+          <!-- mouth (smirk) -->
+          <path id="mouth" d="M84 68 Q100 66 112 72" stroke="#2B3A2F" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+
+          <!-- sweat drop for urgent state -->
+          <path id="sweat" d="M130 40 Q136 52 130 58 Q124 52 130 40 Z" fill="#7EC8E3" opacity="0"/>
+        </svg>
+      </div>
+    </div>
+    <div class="mascot-caption" id="mascotCaption">Reading your sensor…</div>
+  </div>
+
+  <div class="suggest-row" id="suggestRow">
+    <div class="suggest-chip" data-q="What should I eat right now?">What should I eat right now?</div>
+    <div class="suggest-chip" data-q="Give me a macro profile for dinner">Macros for dinner</div>
+    <div class="suggest-chip" data-q="I'm about to work out">About to work out</div>
+    <div class="suggest-chip" data-q="Need a snack idea">Snack idea</div>
+  </div>
+
+  <div class="chat-scroll" id="chatScroll"></div>
+
+  <div class="disclaimer">Live Dexcom readings are for awareness, not medical advice. Follow your care team's plan for treating highs and lows.</div>
+
+  <div class="input-bar">
+    <input type="text" id="chatInput" placeholder="Ask about a meal, snack, or your trend…" autocomplete="off">
+    <button class="send-btn" id="sendBtn">➤</button>
+  </div>
+
+    </section>
+  </main>
+
+</div>
+
+<script>
+// ---------- Config: fill these in once Supabase + OneSignal are set up ----------
+const SUPABASE_URL = "";       // e.g. "https://xyzcompany.supabase.co"
+const SUPABASE_ANON_KEY = "";  // the public anon key (read-only via row-level security)
+const ONESIGNAL_APP_ID = "";   // from your OneSignal app settings
+
+// ---------- Glucose source: live Supabase readings written by the Dexcom job ----------
+let glucose = null;
+let trend = 0;
+const history = [];
+let liveDataConnected = false;
+
+async function fetchLatestReadings() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/readings?select=glucose,trend_arrow,created_at&order=created_at.desc&limit=12`,
+      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+    );
+    if (!res.ok) return false;
+    const rows = await res.json();
+    if (!rows.length) return false;
+
+    // rows come back newest-first; reverse for oldest->newest history
+    const ordered = rows.slice().reverse();
+    history.length = 0;
+    ordered.forEach(r => history.push(r.glucose));
+    const latest = rows[0];
+    const previous = rows[1] ? rows[1].glucose : latest.glucose;
+    glucose = latest.glucose;
+    trend = latest.glucose - previous;
+    liveDataConnected = true;
+    return true;
+  } catch (err) {
+    console.error('Supabase fetch failed:', err);
+    return false;
+  }
+}
+
+async function stepGlucose() {
+  return fetchLatestReadings();
+}
+
+// ---------- OneSignal push registration ----------
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+if (ONESIGNAL_APP_ID) {
+  OneSignalDeferred.push(async function (OneSignal) {
+    await OneSignal.init({ appId: ONESIGNAL_APP_ID });
+    // Prompts only make sense once this is installed via "Add to Home Screen"
+    OneSignal.Notifications.requestPermission();
+  });
+}
+
+
+function getState(g) {
+  if (g < 70) return 'low';
+  if (g < 80) return 'low-ish';
+  if (g <= 160) return 'range';
+  if (g <= 220) return 'high';
+  return 'very-high';
+}
+
+function getArrow(t) {
+  if (t > 4) return '↑';
+  if (t > 1.2) return '↗';
+  if (t < -4) return '↓';
+  if (t < -1.2) return '↘';
+  return '→';
+}
+
+const STATE_STYLE = {
+  'low':       { bg: '#F7DEDC', fg: '#C0463D', body: '#D9635A', caption: "Great, we're doing this again." },
+  'low-ish':   { bg: '#F7DEDC', fg: '#C0463D', body: '#DE7E76', caption: "Dipping. Feed me or deal with it." },
+  'range':     { bg: '#E3EFE2', fg: '#5A9367', body: '#5A9367', caption: "Fine. Everything's fine." },
+  'high':      { bg: '#FBE6DA', fg: '#E2703A', body: '#E39A5E', caption: "Someone's had a moment, huh." },
+  'very-high': { bg: '#FBE6DA', fg: '#C0463D', body: '#D9635A', caption: "Bold choices today. Bold." }
+};
+
+function renderMascot(state, arrow) {
+  const style = STATE_STYLE[state];
+  document.getElementById('shirt').setAttribute('fill', style.body);
+  document.getElementById('armL').setAttribute('stroke', style.body);
+  document.getElementById('armR').setAttribute('stroke', style.body);
+  document.getElementById('mascotCaption').textContent = style.caption;
+
+  const chip = document.getElementById('glucoseChip');
+  chip.style.background = style.bg;
+  chip.style.color = style.fg;
+  document.getElementById('glucoseVal').textContent = glucose + ' mg/dL';
+  document.getElementById('glucoseArrow').textContent = arrow;
+
+  const statusNames = { 'low': 'Low', 'low-ish': 'Drifting low', 'range': 'In range', 'high': 'Running high', 'very-high': 'Very high' };
+  const statusNotes = {
+    'low': 'Follow your care team\'s low-glucose plan and recheck as directed.',
+    'low-ish': 'A little downward pressure. Pair your next choice with something steady.',
+    'range': 'A steady place to make a satisfying, balanced choice.',
+    'high': 'Keep the next choice fiber-forward and paired with protein.',
+    'very-high': 'Keep this simple and follow your care team\'s plan for highs.'
+  };
+  const arrowNames = { '↑': 'Rising', '↗': 'Rising gently', '→': 'Holding steady', '↘': 'Falling gently', '↓': 'Falling' };
+  document.getElementById('readingValue').textContent = glucose;
+  document.getElementById('statusLabel').textContent = statusNames[state];
+  document.getElementById('trendLabel').textContent = arrow;
+  document.getElementById('trendValue').textContent = arrowNames[arrow] || 'Changing';
+  document.getElementById('readingNote').textContent = statusNotes[state];
+  document.getElementById('statusSwatch').style.background = style.body;
+  document.getElementById('statusSwatch').style.boxShadow = `0 0 0 6px ${style.bg}`;
+  document.getElementById('connectionLabel').textContent = liveDataConnected ? 'Dexcom connected' : 'Demo reading';
+  document.getElementById('connectionPill').classList.toggle('connected', liveDataConnected);
+  document.getElementById('sourceValue').textContent = liveDataConnected ? 'Dexcom Share' : 'Demo mode';
+
+  const bob = document.getElementById('mascotBob');
+  bob.className = state === 'low' ? 'bob-urgent' : (state === 'high' || state === 'very-high' || state === 'low-ish') ? 'bob-alert' : 'bob-calm';
+
+  const browL = document.getElementById('browL');
+  const browR = document.getElementById('browR');
+  const eyeL = document.getElementById('eyeL');
+  const eyeR = document.getElementById('eyeR');
+  const mouth = document.getElementById('mouth');
+  const armL = document.getElementById('armL');
+  const armR = document.getElementById('armR');
+  const legL = document.getElementById('legL');
+  const legR = document.getElementById('legR');
+  const sweat = document.getElementById('sweat');
+
+  if (state === 'range') {
+    // classic smirk, one brow raised, arms crossed, casual stance
+    browL.setAttribute('d', 'M80 44 L94 41');
+    browR.setAttribute('d', 'M106 40 L120 46');
+    eyeL.setAttribute('d', 'M83 52 Q88 55 93 52');
+    eyeR.setAttribute('d', 'M107 52 Q112 55 117 52');
+    mouth.setAttribute('d', 'M84 68 Q100 66 112 72');
+    armL.setAttribute('d', 'M82 98 L122 128');
+    armR.setAttribute('d', 'M118 98 L78 128');
+    legL.setAttribute('d', 'M92 148 L80 182');
+    legR.setAttribute('d', 'M108 148 L120 182');
+    sweat.setAttribute('opacity', '0');
+  } else if (state === 'high') {
+    // unimpressed, flat brows, eyes rolled sideways
+    browL.setAttribute('d', 'M79 42 L94 44');
+    browR.setAttribute('d', 'M106 44 L121 42');
+    eyeL.setAttribute('d', 'M83 53 Q90 48 94 52');
+    eyeR.setAttribute('d', 'M106 52 Q110 48 117 53');
+    mouth.setAttribute('d', 'M85 70 L112 68');
+    armL.setAttribute('d', 'M82 98 L122 130');
+    armR.setAttribute('d', 'M118 98 L78 130');
+    legL.setAttribute('d', 'M92 148 L82 182');
+    legR.setAttribute('d', 'M108 148 L118 182');
+    sweat.setAttribute('opacity', '0');
+  } else if (state === 'very-high') {
+    // deep eye-roll, furrowed brows, tight cross, sweat
+    browL.setAttribute('d', 'M79 46 L94 40');
+    browR.setAttribute('d', 'M106 40 L121 46');
+    eyeL.setAttribute('d', 'M83 50 Q90 43 95 49');
+    eyeR.setAttribute('d', 'M105 49 Q110 43 117 50');
+    mouth.setAttribute('d', 'M86 71 L110 69');
+    armL.setAttribute('d', 'M82 98 L124 132');
+    armR.setAttribute('d', 'M118 98 L76 132');
+    legL.setAttribute('d', 'M92 148 L84 182');
+    legR.setAttribute('d', 'M108 148 L116 182');
+    sweat.setAttribute('opacity', '0.9');
+  } else if (state === 'low-ish') {
+    // woozy, uncrossed arms starting to drift for balance
+    browL.setAttribute('d', 'M80 45 L94 43');
+    browR.setAttribute('d', 'M106 43 L120 45');
+    eyeL.setAttribute('d', 'M82 53 Q88 57 94 53');
+    eyeR.setAttribute('d', 'M106 53 Q112 57 118 53');
+    mouth.setAttribute('d', 'M86 70 Q100 74 110 68');
+    armL.setAttribute('d', 'M82 98 L60 122');
+    armR.setAttribute('d', 'M118 98 L140 122');
+    legL.setAttribute('d', 'M92 148 L76 180');
+    legR.setAttribute('d', 'M108 148 L124 180');
+    sweat.setAttribute('opacity', '0');
+  } else if (state === 'low') {
+    // wobbly, dizzy eyes, mouth open, arms out for balance
+    browL.setAttribute('d', 'M80 46 L94 44');
+    browR.setAttribute('d', 'M106 44 L120 46');
+    eyeL.setAttribute('d', 'M81 50 L91 56 M91 50 L81 56');
+    eyeR.setAttribute('d', 'M109 50 L119 56 M119 50 L109 56');
+    mouth.setAttribute('d', 'M90 68 Q100 78 110 68');
+    armL.setAttribute('d', 'M82 98 L55 118');
+    armR.setAttribute('d', 'M118 98 L145 118');
+    legL.setAttribute('d', 'M92 148 L72 178');
+    legR.setAttribute('d', 'M108 148 L128 178');
+    sweat.setAttribute('opacity', '0');
+  }
+}
+
+function renderUnavailable() {
+  document.getElementById('readingValue').textContent = '—';
+  document.getElementById('statusLabel').textContent = 'Waiting for Dexcom';
+  document.getElementById('trendLabel').textContent = '·';
+  document.getElementById('trendValue').textContent = 'No live reading';
+  document.getElementById('readingNote').textContent = 'The scheduled Dexcom Share job has not delivered a reading yet.';
+  document.getElementById('sourceValue').textContent = 'Not connected';
+  document.getElementById('connectionLabel').textContent = 'Waiting for Dexcom';
+  document.getElementById('connectionPill').classList.remove('connected');
+}
+
+async function tick() {
+  const gotLive = await stepGlucose();
+  if (!gotLive || glucose === null) {
+    liveDataConnected = false;
+    renderUnavailable();
+    return;
+  }
+  renderMascot(getState(glucose), getArrow(trend));
+}
+
+// ---------- Meal / macro logic ----------
+function timeOfDay() {
+  const h = new Date().getHours();
+  if (h < 10) return 'breakfast';
+  if (h < 14) return 'lunch';
+  if (h < 17) return 'snack';
+  if (h < 21) return 'dinner';
+  return 'late';
+}
+
+function macroProfileFor(state, meal) {
+  // returns {carbs, protein, fat, note, ideas}
+  if (state === 'low' || state === 'low-ish') {
+    return {
+      carbs: '20–25g fast-acting', protein: 'small, after stabilizing', fat: 'minimal for now',
+      note: 'Priority is bringing things back up gently, then a balanced follow-up meal in 30–45 min.',
+      ideas: ['Juice or regular soda, then recheck', 'Fruit + a few crackers', 'Follow with your usual balanced meal once stable']
+    };
+  }
+  if (state === 'very-high') {
+    return {
+      carbs: 'very low, <15g', protein: 'moderate, lean', fat: 'low',
+      note: 'Lean toward protein and fiber, skip refined carbs until the trend turns.',
+      ideas: ['Grilled chicken + big leafy salad', 'Scrambled eggs + sautéed greens', 'Plain Greek yogurt with cucumber & herbs']
+    };
+  }
+  if (state === 'high') {
+    const base = {
+      carbs: '15–25g, fiber-forward', protein: 'moderate-high', fat: 'moderate',
+      note: 'Favor high-fiber, slower carbs and pair with protein to blunt the rise.',
+      ideas: ['Salmon + roasted broccoli + small portion quinoa', 'Turkey lettuce wraps with avocado', 'Veggie omelet with a side salad']
+    };
+    return base;
+  }
+  // in range
+  const byMeal = {
+    breakfast: { carbs: '30–40g', protein: '20–25g', fat: '10–15g', note: 'Room for a balanced start — pair carbs with protein and some fat to keep it steady.', ideas: ['Greek yogurt, berries, walnuts', 'Veggie omelet + slice of whole-grain toast', 'Oats with peanut butter and cinnamon'] },
+    lunch:     { carbs: '35–45g', protein: '25–30g', fat: '12–18g', note: 'A steady, satisfying midday plate — whole grains are fine here.', ideas: ['Grain bowl: farro, chickpeas, roasted veg, tahini', 'Chicken salad wrap + side of fruit', 'Lentil soup + whole-grain roll'] },
+    snack:     { carbs: '15–20g', protein: '8–12g', fat: '5–10g', note: 'Keep it small and paired — protein or fat with any carb.', ideas: ['Apple + peanut butter', 'Handful of almonds + string cheese', 'Hummus + veggie sticks'] },
+    dinner:    { carbs: '35–45g', protein: '25–35g', fat: '12–18g', note: 'A well-rounded plate — good time for fiber-rich carbs since the day is winding down.', ideas: ['Baked salmon, sweet potato, green beans', 'Stir-fry with tofu or chicken, brown rice', 'Turkey chili with beans'] },
+    late:      { carbs: '10–15g', protein: '10–15g', fat: '5–10g', note: 'Light and easy on digestion this late — nothing heavy in refined carbs.', ideas: ['Cottage cheese + a few berries', 'Small handful of nuts', 'Herbal tea + a couple of crackers with cheese'] },
+  };
+  return byMeal[meal] || byMeal.lunch;
+}
+
+function macroCardHTML(profile, state, meal) {
+  const stateLabel = { 'low':'Low', 'low-ish':'Drifting low', 'range':'In range', 'high':'High', 'very-high':'Very high' }[state];
+  let ideasHTML = profile.ideas.map(i => `<div class="macro-row">${i}</div>`).join('');
+  return `
+    <div class="macro-card">
+      <div class="mtitle">${meal.charAt(0).toUpperCase()+meal.slice(1)} plan · ${stateLabel} (${glucose} mg/dL)</div>
+      <div class="macro-row"><span>Carbs</span><b>${profile.carbs}</b></div>
+      <div class="macro-row"><span>Protein</span><b>${profile.protein}</b></div>
+      <div class="macro-row"><span>Fat</span><b>${profile.fat}</b></div>
+      <div class="macro-row" style="border-top:1px solid var(--border); margin-top:4px; padding-top:8px; color:var(--ink);">${profile.note}</div>
+      ${ideasHTML}
+    </div>`;
+}
+
+// ---------- Chat handling ----------
+const chatScroll = document.getElementById('chatScroll');
+
+function addMsg(text, who) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  div.textContent = text;
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+
+function addCard(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  chatScroll.appendChild(div.firstElementChild);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+
+function detectMeal(text) {
+  const t = text.toLowerCase();
+  if (t.includes('breakfast')) return 'breakfast';
+  if (t.includes('lunch')) return 'lunch';
+  if (t.includes('dinner')) return 'dinner';
+  if (t.includes('snack')) return 'snack';
+  if (t.includes('work out') || t.includes('workout') || t.includes('exercise')) return timeOfDay();
+  return timeOfDay();
+}
+
+// conversation memory sent to the model each turn
+const conversation = [];
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'typingMsg';
+  div.textContent = '···';
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+function removeTyping() {
+  const el = document.getElementById('typingMsg');
+  if (el) el.remove();
+}
+
+function fallbackRespond(userText) {
+  // used only if the API call fails
+  const state = getState(glucose);
+  const meal = detectMeal(userText);
+  const profile = macroProfileFor(state, meal);
+  addMsg(`You're at ${glucose} mg/dL (${state.replace('-', ' ')}). Here's a fit for ${meal}:`, 'agent');
+  addCard(macroCardHTML(profile, state, meal));
+}
+
+async function respond(userText) {
+  if (glucose === null) {
+    addMsg('I am still waiting for a live Dexcom reading. Try again once the next scheduled check arrives.', 'agent');
+    return;
+  }
+  const state = getState(glucose);
+  const arrow = getArrow(trend);
+  const meal = detectMeal(userText);
+  addTyping();
+
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Supabase is not configured');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/recommend-meal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ message: userText, glucose, trend_arrow: arrow, history })
+    });
+    if (!res.ok) throw new Error(`Recommendation request failed: ${res.status}`);
+    const parsed = await res.json();
+    removeTyping();
+    addMsg(parsed.reply, 'agent');
+    if (parsed.show_macro && parsed.macro) {
+      const m = parsed.macro;
+      const ideasHTML = (m.ideas || []).map(i => `<div class="macro-row">${i}</div>`).join('');
+      addCard(`
+        <div class="macro-card">
+          <div class="mtitle">${m.meal} plan · ${glucose} mg/dL</div>
+          <div class="macro-row"><span>Carbs</span><b>${m.carbs}</b></div>
+          <div class="macro-row"><span>Protein</span><b>${m.protein}</b></div>
+          <div class="macro-row"><span>Fat</span><b>${m.fat}</b></div>
+          <div class="macro-row" style="border-top:1px solid var(--border); margin-top:4px; padding-top:8px; color:var(--ink);">${m.note}</div>
+          ${ideasHTML}
+        </div>`);
+    }
+  } catch (err) {
+    console.error('Meal recommendation failed:', err);
+    removeTyping();
+    fallbackRespond(userText);
+  }
+}
+
+document.getElementById('sendBtn').addEventListener('click', send);
+document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+document.querySelectorAll('.suggest-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const q = chip.getAttribute('data-q');
+    addMsg(q, 'user');
+    respond(q);
+  });
+});
+
+function send() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  addMsg(text, 'user');
+  input.value = '';
+  respond(text);
+}
+
+// ---------- boot ----------
+tick();
+setTimeout(() => {
+  addMsg("Once your Dexcom reading arrives, I can help you choose a meal or snack around the current trend.", 'agent');
+}, 400);
+setInterval(tick, 60000); // refresh the Supabase reading every minute
+</script>
+</body>
+</html>
